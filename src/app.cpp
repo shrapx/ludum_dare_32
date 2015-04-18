@@ -22,6 +22,9 @@ void App::_config(const string& filename = "data/config.json")
 	// window
 	window.setTitle(window_title);
 	view = window.getDefaultView();
+	view.zoom(zoom_factor);
+	//view.move(0,0.5);
+	view.setCenter(0,0);
 
 	// load config
 	Value config_json = Loader::load(filename);
@@ -60,7 +63,7 @@ int App::_execute()
 
 	for (;;)
 	{
-		_events();
+
 
 		if ( base_state == _END )
 		{
@@ -71,6 +74,7 @@ int App::_execute()
 
 		if ( base_time.update() )
 		{
+			_events();
 			_update();
 		}
 		else
@@ -127,8 +131,9 @@ void App::_event(sf::Event& event)
 		case sf::Event::MouseMoved:
 		{
 			mouse_moved = true;
-			mouse_x = event.mouseMove.x;
-			mouse_y = event.mouseMove.y;
+			mouse.x = event.mouseMove.x;
+			mouse.y = event.mouseMove.y;
+
 			break;
 		}
 		default: ;
@@ -164,26 +169,144 @@ void App::mouse_input(sf::Event& event, bool value)
 	}
 }
 
+sf::Vector2f normalize(sf::Vector2f vec)
+{
+	float length = vec.x*vec.x + vec.y*vec.y;
+	if (length != 0)
+	{
+		length = sqrt(1.0f/length);
+		vec.x *= length;
+		vec.y *= length;
+	}
+	return vec;
+}
+
+float get_angle(sf::Vector2f vec)
+{
+	if (vec.y == 0)
+			return vec.x < 0 ? 180 : 0;
+	else if (vec.x == 0)
+			return vec.y < 0 ? 270 : 90;
+
+	if ( vec.y > 0)
+			if (vec.x > 0)
+					return atan(vec.y/vec.x) * 180.f/3.14159f;
+			else
+					return 180.0-atan(vec.y/-vec.x) * 180.f/3.14159f;
+	else
+			if (vec.x > 0)
+					return 360.0-atan(-vec.y/vec.x) * 180.f/3.14159f;
+			else
+					return 180.0+atan(-vec.y/-vec.x) * 180.f/3.14159f;
+}
+
 void App::_update()
 {
-	double frame_length = base_time.get_step();
+	float frame_length = base_time.get_step();
+
+	if (_world._player)
+	{
+		sf::Vector2f pos = _world._player->tile_position;
+
+		int updown = cmd_state["down"] - cmd_state["up"];
+		int leftright = cmd_state["right"] - cmd_state["left"];
+
+
+		pos.y += (updown * 0.05f) - (leftright * 0.025f);
+		pos.x += (updown * 0.05f) + (leftright * 0.025f);
+
+
+		/*sf::Vector2f normal;
+		normal.y = updown - leftright;
+		normal.x = updown + leftright;
+
+		float length = normal.x*normal.x + normal.y*normal.y;
+		if (length != 0)
+		{
+			length = sqrt(1.0f/length);
+			normal.x *= length;
+			normal.y *= length;
+		}*/
+
+		sf::Vector2f vec(updown - leftright, updown + leftright);
+
+		_world._player->tile_normal = normalize(vec);
+		_world._player->tile_angle = get_angle(vec);
+
+		/*pos.y -= leftright * 0.025f;
+		pos.x += leftright * 0.025f;
+		pos.y += updown * 0.05f;
+		pos.x += updown * 0.05f;*/
+
+		_world._player->tile_position = pos;
+
+		auto screenpos = World::tile_to_screen(pos);
+		_world._player->setPosition(screenpos);
+		view.setCenter(screenpos);
+
+		/// get global unit of tile pos
+		sf::Vector2f tile_pos;
+		tile_pos.x = floor(pos.x);
+		tile_pos.y = floor(pos.y);
+
+		_world.chunk_address = World::get_chunk_address(pos);
+
+		if (cmd_state["fire"])
+		{
+			/// shoot water from players direction and position
+
+			//_world._player->tile_angle;
+			//_world._player->tile_normal;
+
+			_world.water_tile(tile_pos, 0.01f);
+		}
+
+		_world._entities["target"]->setPosition(World::tile_to_screen(tile_pos) );
 
 
 
+
+
+		float walk_anim = fmod(base_time.get_current()*10.f,_world._player->anim_frames);
+		cout << walk_anim << endl;
+		int frame_x = int(walk_anim) * 32;
+
+		float turn_anim = (_world._player->tile_angle/360.0f) * _world._player->rotate_frames;
+
+		int frame_y =    int(turn_anim) * 32;
+
+		auto frame_rect = sf::IntRect(frame_x, frame_y, 32, 32);
+
+		_world._player->setTextureRect(frame_rect);
+
+
+	}
+
+	if (mouse_moved)
+	{
+
+		//_world._entities["target"]->setPosition( World::screen_to_world(mouse));
+
+		_world._entities["mouse"]->setPosition(mouse);
+
+		//_world._entities["mouse"]->setPosition(
+		//	World::world_to_screen( World::screen_to_world(mouse) ));
+
+		//view.setCenter(mouse*zoom_factor);
+
+	}
 }
 
 void App::_render()
 {
 	window.setView(view);
-	view = window.getDefaultView();
+	//view = window.getDefaultView();
+	//window.setView(view);
 
 	window.clear(sf::Color::Black);
 
 
 	//double ipo = base_time.get_interpolation();
-
-	window.setView(view);
-
 
 	/// draw tiles
 
@@ -193,7 +316,6 @@ void App::_render()
 	{
 		window.draw( *(it.second) );
 	}
-
 
   //window.draw(text);
 	window.display();

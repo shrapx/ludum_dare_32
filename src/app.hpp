@@ -56,10 +56,10 @@ private:
 	enum { _BEGIN, _END, _UPDATE, _RENDER };
 	short base_state = _BEGIN;
 
-  double refresh_rate = 50.0f;
+  float refresh_rate = 50.0f;
   unsigned int window_width  = 1280;
   unsigned int window_height = 960;
-  double zoom_factor = 0.25f;
+  float zoom_factor = 1/4.0f;
 
   unsigned int window_style =
 		sf::Style::Titlebar | sf::Style::Close;
@@ -77,7 +77,8 @@ private:
 	// app
   void key_input(sf::Event& event, bool value);
 	void mouse_input(sf::Event& event, bool value);
-	float mouse_x, mouse_y;
+
+	sf::Vector2f mouse;
 	bool mouse_moved = false;
 	World _world;
 };
