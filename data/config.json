@@ -53,11 +53,12 @@
 		"mouse":"data/image/mouse.png",
 		"target":"data/image/target.png",
 		"tile_target":"data/image/target2.png",
-		"water":"data/image/water.png"
+		"water":"data/image/water.png",
+		"water_level":"data/image/water_level.png"
 	},
 	"entities":
 	{
-		"player":{"water":50.0,"origin":[16,30],"pos":[524,520],"frames":[4,4]},
+		"player":{"water":75.0,"water_max":100.0,"origin":[16,30],"pos":[524,520],"frames":[4,4]},
 		"well":{"water":500.0, "origin":[32,32],"pos":[520.5,520.5]},
 		"tap" :{"water":1000.0,"origin":[8,28],"pos":[536,520]},
 		"mouse":{},
@@ -76,10 +77,16 @@
 		"MouseRight":"charge",
 		"Space":"grab"
 	},
+	"music_volume": 40,
+	"effect_volume": 25,
 	"music":
 	{
-	"volume": 50,
 	"nature":"data/music/ld32_nature.ogg",
-	"robot":"data/music/ld32_robot.ogg"
+	"robot":"data/music/ld32_robot.ogg",
+	"water1":"data/music/ld32_water1.ogg",
+	"water2":"data/music/ld32_water2.ogg",
+	"water3":"data/music/ld32_water3.ogg",
+	"water4":"data/music/ld32_water4.ogg",
+	"watercharge":"data/music/walk.ogg"
 	}
 }

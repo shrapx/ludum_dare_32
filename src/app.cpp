@@ -49,11 +49,19 @@ void App::_config(const string& filename = "data/config.json")
 		}
 	}
 
-	Json::Value jmusic = config_json["music"];
-	if (jmusic.isMember("volume"))
+
+	if (config_json.isMember("music_volume"))
 	{
-		music_volume = jmusic["volume"].asFloat();
+		music_volume = config_json["music_volume"].asFloat();
 	}
+
+	if (config_json.isMember("effect_volume"))
+	{
+		effect_volume = config_json["effect_volume"].asFloat();
+	}
+
+	Json::Value jmusic = config_json["music"];
+	/*
 	if (jmusic.isMember("robot"))
 	{
 		auto m = make_shared<sf::Music>();
@@ -75,6 +83,18 @@ void App::_config(const string& filename = "data/config.json")
 			m->setLoop(true);
 			m->setVolume(0);
 			music["nature"] = m;
+		}
+	}*/
+
+	for ( string& name : jmusic.getMemberNames())
+	{
+		auto m = make_shared<sf::Music>();
+		if ( m->openFromFile(jmusic[name].asString()))
+		{
+			m->play();
+			m->setLoop(true);
+			m->setVolume(0);
+			music[name] = m;
 		}
 	}
 
@@ -233,20 +253,21 @@ void App::_update()
 {
 	float frame_length = base_time.get_step();
 
-	/// music mashup
-	float robotvol  = (0.66f-_world.life_compare) * music_volume;// * 0.333f;
-	float naturevol =  (_world.life_compare-0.05f) * music_volume * 1.5f;// * 1.5f;
+	if (music_volume > 0.0f)
+	{
+		/// music mashup
+		float robotvol  = (0.66f-_world.life_compare) * music_volume;// * 0.333f;
+		float naturevol =  (_world.life_compare-0.05f) * music_volume * 1.5f;// * 1.5f;
 
-	robotvol = robotvol > music_volume ? music_volume : robotvol;
-	robotvol = robotvol < 0.0f ? 0.0f: robotvol;
-	naturevol = naturevol > music_volume ? music_volume : naturevol;
-	naturevol = naturevol < 0.0f ? 0.0f: naturevol;
+		robotvol = robotvol > music_volume ? music_volume : robotvol;
+		robotvol = robotvol < 0.0f ? 0.0f: robotvol;
+		naturevol = naturevol > music_volume ? music_volume : naturevol;
+		naturevol = naturevol < 0.0f ? 0.0f: naturevol;
 
-	music["robot"]->setVolume(robotvol);
-	music["nature"]->setVolume(naturevol);
-
-	cout << "robot" << robotvol << endl;
-	cout << "nature" << naturevol << endl;
+		music["robot"]->setVolume(robotvol);
+		music["nature"]->setVolume(naturevol);
+	}
+	//cout << "robot" << robotvol << endl; cout << "nature" << naturevol << endl;
 
 	if (_world._player)
 	{
@@ -262,8 +283,6 @@ void App::_update()
 			sf::Vector2f tile_pos = _world._player->tile_position;
 
 			sf::Vector2f newdir(updown + leftright, updown - leftright);
-
-
 
 			/// neighbouring tiles
 			for (auto& offset : _world.lazy_offset)
@@ -304,7 +323,6 @@ void App::_update()
 		if (cmd_state["fire"])
 		{
 			/// how much water to spray
-
 			if (_world._player->water > 0.0f)
 			{
 				float water_amt = _world._player->water > 0.25f ? 0.25f : _world._player->water;
@@ -327,9 +345,53 @@ void App::_update()
 				{
 					_world.shoot_water_effect();
 				}
+
+				if (effect_volume > 0.0f)
+				{
+					if (_world.water_level > 0.75f)
+					{
+						music["water1"]->setVolume(0);
+						music["water2"]->setVolume(0);
+						music["water3"]->setVolume(0);
+						music["water4"]->setVolume(effect_volume);
+
+					}
+					else if (_world.water_level > 0.5f)
+					{
+						music["water1"]->setVolume(0);
+						music["water2"]->setVolume(0);
+						music["water3"]->setVolume(effect_volume);
+						music["water4"]->setVolume(0);
+					}
+					else if (_world.water_level > 0.25f)
+					{
+						music["water1"]->setVolume(0);
+						music["water2"]->setVolume(effect_volume);
+						music["water3"]->setVolume(0);
+						music["water4"]->setVolume(0);
+					}
+					else
+					{
+						music["water1"]->setVolume(effect_volume);
+						music["water2"]->setVolume(0);
+						music["water3"]->setVolume(0);
+						music["water4"]->setVolume(0);
+					}
+				}
+			}
+			else
+			{
+				if (effect_volume > 0.0f)
+				{
+					music["water1"]->setVolume(0);
+					music["water2"]->setVolume(0);
+					music["water3"]->setVolume(0);
+					music["water4"]->setVolume(0);
+					music["watercharge"]->setVolume(0);
+				}
 			}
 		}
-		else if ( cmd_state["charge"] )
+		else if ( cmd_state["charge"] && _world._player->water < _world._player->water_max )
 		{
 			/// todo try any water holding entity
 			for (auto it : _world._entities)
@@ -340,19 +402,40 @@ void App::_update()
 
 				sf::Vector2f distsqr = ent->tile_position - _world._player->tile_position;
 
-
-				if ( abs(distsqr.x) < 2 && abs(distsqr.y) < 2)
+				if ( abs(distsqr.x) < 3 && abs(distsqr.y) < 3)
 				{
 					if (ent->water > 0.0f)
 					{
+						if (effect_volume > 0.0f)
+						{
+							music["water1"]->setVolume(0);
+							music["water2"]->setVolume(0);
+							music["water3"]->setVolume(0);
+							music["water4"]->setVolume(0);
+							music["watercharge"]->setVolume(effect_volume);
+						}
+						/// charging water
 						float water_amt =	ent->water > 0.5f ? 0.5f : ent->water;
 						_world._player->water += water_amt;
 						ent->water -= water_amt;
-
-						cout << _world._player->water << endl;
+						if (_world._player->water > _world._player->water_max)
+						{
+							_world._player->water = _world._player->water_max;
+						}
 						break;
 					}
 				}
+			}
+		}
+		else
+		{
+			if (music_volume > 0.0f)
+			{
+				music["water1"]->setVolume(0);
+				music["water2"]->setVolume(0);
+				music["water3"]->setVolume(0);
+				music["water4"]->setVolume(0);
+				music["watercharge"]->setVolume(0);
 			}
 		}
 
@@ -394,9 +477,11 @@ void App::_render()
 
 
 	_world.draw(window);
-	//_world.draw_wall_tiles(window);
 
-
+	auto ui_pos = view.getCenter();
+	ui_pos.y += 64;
+	_world.water_level_sprite->setPosition(ui_pos);
+	window.draw( *(_world.water_level_sprite));
 
   //window.draw(text);
 	window.display();

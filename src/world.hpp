@@ -122,6 +122,8 @@ public:
 	unordered_map<string, shared_ptr<sf::Texture>> _textures;
 
 	shared_ptr<sf::Sprite> tile_sprite;
+	shared_ptr<sf::Sprite> water_level_sprite;
+	float water_level;
 
 	unordered_map<int, unordered_map<int, Chunk>> _map;
 
@@ -152,9 +154,13 @@ public:
 
 		// load tile sprite
 		tile_sprite = make_shared<sf::Sprite>( *_textures["tiles"] );
-
 		tile_sprite->setOrigin(32,16);
 
+		water_level_sprite = make_shared<sf::Sprite>( *_textures["water_level"] );
+
+		water_level_sprite->setOrigin(32,16);
+
+		//water_level_sprite->setPosition(
 		// load entity textures
 		for ( string& ent_name : data["entities"].getMemberNames() )
 		{
@@ -215,13 +221,19 @@ public:
 			ent->water = data["water"].asFloat();
 		}
 
+		if (data.isMember("water_max"))
+		{
+			ent->water_max = data["water_max"].asFloat();
+		}
+
+
 		if (data.isMember("rot"))
 			ent->tile_angle = data["rot"].asFloat();
 
 		if (data.isMember("frames"))
 		{
-			ent->rotate_frames = data["frames"][0].asInt();
 			ent->anim_frames = data["frames"][0].asInt();
+			ent->rotate_frames = data["frames"][1].asInt();
 		}
 
 		return ent;
@@ -276,6 +288,15 @@ public:
 				/// explicit next iteration
 				++it;
 			}
+		}
+
+		/// update water level display
+		{
+			water_level = (1.0f /_player->water_max) * _player->water;
+			water_level = water_level > 0.99f ? 0.99f : water_level;
+
+			auto rect = sf::IntRect(floor(water_level * 4) * 64, 0, 64, 32);
+			water_level_sprite->setTextureRect(rect);
 		}
 	}
 

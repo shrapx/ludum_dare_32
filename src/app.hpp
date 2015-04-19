@@ -76,7 +76,7 @@ private:
 
 	unordered_map<string, shared_ptr<sf::Music>> music;
 	float music_volume;
-
+	float effect_volume;
   void key_input(sf::Event& event, bool value);
 	void mouse_input(sf::Event& event, bool value);
 

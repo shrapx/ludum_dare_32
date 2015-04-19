@@ -18,12 +18,14 @@ public:
 
   float tile_angle;
 
-  int rotate_frames = 0;
   int anim_frames = 0;
+  int rotate_frames = 0;
+
 
   float walk_anim_marker;
 
   float water;
+  float water_max;
 
 };
 
