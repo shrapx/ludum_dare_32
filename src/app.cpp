@@ -215,28 +215,10 @@ void App::_update()
 		pos.y += (updown * 0.05f) - (leftright * 0.025f);
 		pos.x += (updown * 0.05f) + (leftright * 0.025f);
 
-
-		/*sf::Vector2f normal;
-		normal.y = updown - leftright;
-		normal.x = updown + leftright;
-
-		float length = normal.x*normal.x + normal.y*normal.y;
-		if (length != 0)
-		{
-			length = sqrt(1.0f/length);
-			normal.x *= length;
-			normal.y *= length;
-		}*/
-
 		sf::Vector2f vec(updown - leftright, updown + leftright);
 
 		_world._player->tile_normal = normalize(vec);
 		_world._player->tile_angle = get_angle(vec);
-
-		/*pos.y -= leftright * 0.025f;
-		pos.x += leftright * 0.025f;
-		pos.y += updown * 0.05f;
-		pos.x += updown * 0.05f;*/
 
 		_world._player->tile_position = pos;
 
@@ -251,6 +233,8 @@ void App::_update()
 
 		_world.chunk_address = World::get_chunk_address(pos);
 
+		//cout << "depth: " << World::tile_to_depth(pos) << endl;
+
 		if (cmd_state["fire"])
 		{
 			/// shoot water from players direction and position
@@ -264,11 +248,8 @@ void App::_update()
 		_world._entities["target"]->setPosition(World::tile_to_screen(tile_pos) );
 
 
-
-
-
 		float walk_anim = fmod(base_time.get_current()*10.f,_world._player->anim_frames);
-		cout << walk_anim << endl;
+		//cout << walk_anim << endl;
 		int frame_x = int(walk_anim) * 32;
 
 		float turn_anim = (_world._player->tile_angle/360.0f) * _world._player->rotate_frames;
@@ -278,7 +259,6 @@ void App::_update()
 		auto frame_rect = sf::IntRect(frame_x, frame_y, 32, 32);
 
 		_world._player->setTextureRect(frame_rect);
-
 
 	}
 
@@ -310,7 +290,11 @@ void App::_render()
 
 	/// draw tiles
 
+	//_world.draw_floor_tiles(window, World::tile_to_depth(_world._player->tile_position), true);
+
+
 	_world.draw(window);
+	//_world.draw_wall_tiles(window);
 
 	for (auto it : _world._entities)
 	{

@@ -2,6 +2,7 @@
 	"textures":
 	{
 		"tiles":"data/image/tiles.png",
+		"walls":"data/image/walls.png",
 		"player":"data/image/player.png",
 		"mouse":"data/image/mouse.png",
 		"target":"data/image/target2.png",
