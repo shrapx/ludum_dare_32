@@ -49,12 +49,41 @@ void App::_config(const string& filename = "data/config.json")
 		}
 	}
 
+	Json::Value jmusic = config_json["music"];
+	if (jmusic.isMember("volume"))
+	{
+		music_volume = jmusic["volume"].asFloat();
+	}
+	if (jmusic.isMember("robot"))
+	{
+		auto m = make_shared<sf::Music>();
+		if ( m->openFromFile(jmusic["robot"].asString()))
+		{
+			m->play();
+			m->setLoop(true);
+			m->setVolume(0);
+			music["robot"] = m;
+		}
+	}
+
+	if (jmusic.isMember("nature"))
+	{
+		auto m = make_shared<sf::Music>();
+		if ( m->openFromFile(jmusic["nature"].asString()))
+		{
+			m->play();
+			m->setLoop(true);
+			m->setVolume(0);
+			music["nature"] = m;
+		}
+	}
+
 	_world.load(config_json);
 }
 
 void App::_load()
 {
-
+	view.setCenter(World::tile_to_screen(_world._player->tile_position));
 }
 
 int App::_execute()
@@ -204,56 +233,134 @@ void App::_update()
 {
 	float frame_length = base_time.get_step();
 
+	/// music mashup
+	float robotvol  = (0.66f-_world.life_compare) * music_volume;// * 0.333f;
+	float naturevol =  (_world.life_compare-0.05f) * music_volume * 1.5f;// * 1.5f;
+
+	robotvol = robotvol > music_volume ? music_volume : robotvol;
+	robotvol = robotvol < 0.0f ? 0.0f: robotvol;
+	naturevol = naturevol > music_volume ? music_volume : naturevol;
+	naturevol = naturevol < 0.0f ? 0.0f: naturevol;
+
+	music["robot"]->setVolume(robotvol);
+	music["nature"]->setVolume(naturevol);
+
+	cout << "robot" << robotvol << endl;
+	cout << "nature" << naturevol << endl;
+
 	if (_world._player)
 	{
-		sf::Vector2f pos = _world._player->tile_position;
+
 
 		int updown = cmd_state["down"] - cmd_state["up"];
 		int leftright = cmd_state["right"] - cmd_state["left"];
 
+		if (updown || leftright)
+		{
+			/// prepare to update players position
 
-		pos.y += (updown * 0.05f) - (leftright * 0.025f);
-		pos.x += (updown * 0.05f) + (leftright * 0.025f);
+			sf::Vector2f tile_pos = _world._player->tile_position;
 
-		sf::Vector2f vec(updown - leftright, updown + leftright);
+			sf::Vector2f newdir(updown + leftright, updown - leftright);
 
-		_world._player->tile_normal = normalize(vec);
-		_world._player->tile_angle = get_angle(vec);
 
-		_world._player->tile_position = pos;
 
-		auto screenpos = World::tile_to_screen(pos);
-		_world._player->setPosition(screenpos);
-		view.setCenter(screenpos);
+			/// neighbouring tiles
+			for (auto& offset : _world.lazy_offset)
+			{
+				Tile& tile = _world.get_tile(tile_pos + offset);
+				if(tile.type > 7)
+				{
 
-		/// get global unit of tile pos
-		sf::Vector2f tile_pos;
-		tile_pos.x = floor(pos.x);
-		tile_pos.y = floor(pos.y);
+					newdir += offset * -2.0f;
+					//tile_pos += offset * -0.05f;
+				}
+			}
 
-		_world.chunk_address = World::get_chunk_address(pos);
 
-		//cout << "depth: " << World::tile_to_depth(pos) << endl;
+			_world._player->tile_normal = _world._player->tile_normal*0.9f + normalize(newdir)*0.1f ;
+
+			_world._player->tile_angle = get_angle(_world._player->tile_normal);
+
+			tile_pos += _world._player->tile_normal*0.1f;
+
+			//_world._player->tile_position = tile_pos;
+
+			_world.chunk_address = World::get_chunk_address(tile_pos);
+
+			_world.set_entity_position("player", tile_pos);
+
+			view.setCenter(World::tile_to_screen(tile_pos));
+
+			/// marks the tile the player is attributed to
+			/*sf::Vector2f unit_pos;
+			unit_pos.x = floor(tile_pos.x);
+			unit_pos.y = floor(tile_pos.y);
+			_world.set_entity_position("tile_target", unit_pos);*/
+
+			_world._player->walk_anim_marker += base_time.get_step()*2.5f;
+		}
 
 		if (cmd_state["fire"])
 		{
-			/// shoot water from players direction and position
+			/// how much water to spray
 
-			//_world._player->tile_angle;
-			//_world._player->tile_normal;
+			if (_world._player->water > 0.0f)
+			{
+				float water_amt = _world._player->water > 0.25f ? 0.25f : _world._player->water;
+				_world._player->water -= water_amt;
 
-			_world.water_tile(tile_pos, 0.01f);
+				/// player shoot water
+				sf::Vector2f water_aim = _world._player->tile_position + _world._player->tile_normal*6.0f;
+
+				_world.set_entity_position("target", water_aim);
+
+				/// marks the tile that is targetted for watering
+				sf::Vector2f tile_pos;
+				tile_pos.x = floor(water_aim.x);
+				tile_pos.y = floor(water_aim.y);
+				_world.set_entity_position("tile_target", tile_pos);
+
+				_world.water_area(water_aim, water_amt);
+
+				for (int i = 0; i < 10; ++i)
+				{
+					_world.shoot_water_effect();
+				}
+			}
+		}
+		else if ( cmd_state["charge"] )
+		{
+			/// todo try any water holding entity
+			for (auto it : _world._entities)
+			{
+				auto& ent = it.second;
+
+				if (ent == _world._player) continue;
+
+				sf::Vector2f distsqr = ent->tile_position - _world._player->tile_position;
+
+
+				if ( abs(distsqr.x) < 2 && abs(distsqr.y) < 2)
+				{
+					if (ent->water > 0.0f)
+					{
+						float water_amt =	ent->water > 0.5f ? 0.5f : ent->water;
+						_world._player->water += water_amt;
+						ent->water -= water_amt;
+
+						cout << _world._player->water << endl;
+						break;
+					}
+				}
+			}
 		}
 
-		_world._entities["target"]->setPosition(World::tile_to_screen(tile_pos) );
 
-
-		float walk_anim = fmod(base_time.get_current()*10.f,_world._player->anim_frames);
-		//cout << walk_anim << endl;
+		float walk_anim = fmod(_world._player->walk_anim_marker, _world._player->anim_frames);
 		int frame_x = int(walk_anim) * 32;
 
 		float turn_anim = (_world._player->tile_angle/360.0f) * _world._player->rotate_frames;
-
 		int frame_y =    int(turn_anim) * 32;
 
 		auto frame_rect = sf::IntRect(frame_x, frame_y, 32, 32);
@@ -264,17 +371,10 @@ void App::_update()
 
 	if (mouse_moved)
 	{
-
-		//_world._entities["target"]->setPosition( World::screen_to_world(mouse));
-
 		_world._entities["mouse"]->setPosition(mouse);
-
-		//_world._entities["mouse"]->setPosition(
-		//	World::world_to_screen( World::screen_to_world(mouse) ));
-
-		//view.setCenter(mouse*zoom_factor);
-
 	}
+
+	_world.update();
 }
 
 void App::_render()
@@ -296,10 +396,7 @@ void App::_render()
 	_world.draw(window);
 	//_world.draw_wall_tiles(window);
 
-	for (auto it : _world._entities)
-	{
-		window.draw( *(it.second) );
-	}
+
 
   //window.draw(text);
 	window.display();

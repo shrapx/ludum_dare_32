@@ -56,10 +56,10 @@ private:
 	enum { _BEGIN, _END, _UPDATE, _RENDER };
 	short base_state = _BEGIN;
 
-  float refresh_rate = 50.0f;
+  float refresh_rate = 30.0f;
   unsigned int window_width  = 1280;
   unsigned int window_height = 960;
-  float zoom_factor = 1/2.0f;
+  float zoom_factor = 1/4.0f;
 
   unsigned int window_style =
 		sf::Style::Titlebar | sf::Style::Close;
@@ -74,7 +74,9 @@ private:
 	unordered_map<unsigned short,string> key_cmd;
 	unordered_map<string,bool> cmd_state;
 
-	// app
+	unordered_map<string, shared_ptr<sf::Music>> music;
+	float music_volume;
+
   void key_input(sf::Event& event, bool value);
 	void mouse_input(sf::Event& event, bool value);
 
