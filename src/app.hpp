@@ -59,7 +59,7 @@ private:
   float refresh_rate = 50.0f;
   unsigned int window_width  = 1280;
   unsigned int window_height = 960;
-  float zoom_factor = 1/4.0f;
+  float zoom_factor = 1/2.0f;
 
   unsigned int window_style =
 		sf::Style::Titlebar | sf::Style::Close;

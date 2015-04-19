@@ -58,8 +58,12 @@ public:
 	array<int,25> chunk_draw_depths = {{0,1,1,2,2,2,3,3,3,3,4,4,4,4,4,5,5,5,5,6,6,6,7,7,8}};
 
 	// order of tile drawing, and depth of each tile
-	array<int,16> tile_draw_order = {{0,4,1,8,5,2,12,9,6,3,13,10,7,14,11,15}};
+	array<int,16> tile_draw_order_16 = {{0,4,1,8,5,2,12,9,6,3,13,10,7,14,11,15}};
 	array<int,16> tile_draw_depths = {{0,1,1,2,2,2,3,3,3,3,4,4,4,5,5,6}};
+
+	vector<int> tile_draw_order = World::get_iso_order(32);
+	int tile_draw_order_square = 32;
+	int tile_draw_order_halfsquare = 16;
 
 	shared_ptr<EntityBase> _player;
 
@@ -219,13 +223,13 @@ public:
 
 	void draw(sf::RenderWindow& window)
 	{
-		int offset_x = _player->tile_position.x-2;
-		int offset_y = _player->tile_position.y-2;
+		int offset_x = _player->tile_position.x-tile_draw_order_halfsquare;
+		int offset_y = _player->tile_position.y-tile_draw_order_halfsquare;
 
-		for (int i=0; i<chunk_draw_order.size(); ++i)
+		for (int i=0; i<tile_draw_order.size(); ++i)
 		{
-			int x = offset_x + (chunk_draw_order[i] % 5);
-			int y = offset_y + (chunk_draw_order[i] / 5);
+			int x = offset_x + (tile_draw_order[i] % tile_draw_order_square);
+			int y = offset_y + (tile_draw_order[i] / tile_draw_order_square);
 			draw_floor_tile(window, sf::Vector2f(x,y));
 		}
 	}
@@ -249,8 +253,8 @@ public:
 
 		Tile& tile = chunk._tiles[tile_x+(tile_y*CHUNK_LENGTH) ];
 
-		//int x = tile_draw_order[i] % CHUNK_LENGTH;
-		//int y = tile_draw_order[i] / CHUNK_LENGTH;
+		//int x = tile_draw_order_16[i] % CHUNK_LENGTH;
+		//int y = tile_draw_order_16[i] / CHUNK_LENGTH;
 		//sf::Vector2f screen_pos = tile_to_screen(sf::Vector2f( x + x_offset, y + y_offset));
 
 		pos.x = int(pos.x);
@@ -301,14 +305,14 @@ public:
 			//if (depth_layer == -1 || tile_draw_depths[i] == depth_layer)
 			if ((depth_layer <= tile_draw_depths[i]) != _behind)
 			{
-				int x = tile_draw_order[i] % CHUNK_LENGTH;
-				int y = tile_draw_order[i] / CHUNK_LENGTH;
+				int x = tile_draw_order_16[i] % CHUNK_LENGTH;
+				int y = tile_draw_order_16[i] / CHUNK_LENGTH;
 
 				sf::Vector2f iso_pos = tile_to_screen(sf::Vector2f( x + x_offset, y + y_offset));
 
 				tile_sprite->setPosition(iso_pos);
 
-				tile_sprite->setTextureRect( chunk._tiles[ tile_draw_order[i] ].rect());
+				tile_sprite->setTextureRect( chunk._tiles[ tile_draw_order_16[i] ].rect());
 
 				window.draw(*tile_sprite);
 			}
@@ -334,6 +338,42 @@ public:
 		}*/
 	};
 
+	static vector<int> get_iso_order(int square)
+	{
+		int area = square*square;
+		int depth = 0;
+		int num_last_depth = 0;
+		int pos = 0;
+		vector<int> arr;
+
+		while (depth < (square*2))
+		{
+			if (pos < square)
+			{
+				num_last_depth = (depth * square);
+				depth += 1;
+				pos = num_last_depth;
+			}
+			else
+			{
+				pos = pos - square + 1;
+			}
+
+			if (pos < area)
+			{
+				bool new_val = true;
+				for (int a : arr)
+				{
+					if (a == pos) new_val = false;
+				}
+				if (new_val)
+				{
+					arr.push_back(pos);
+				}
+			}
+		}
+		return arr;
+	}
 };
 
 #endif
