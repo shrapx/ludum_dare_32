@@ -3,7 +3,11 @@
 
 int main(int argc, char **argv) {
 
-	std::string path = _WIN64 ?  "data\\config.json" : "data/config.json";
+#ifdef _WIN64
+	std::string path = "data\\config.json";
+#else 
+	std::string path = "data/config.json";
+#endif
 
 	App a;
 
