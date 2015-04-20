@@ -11,8 +11,8 @@ project(ludum_dare_32)
 # libraries
 
 set(SFML_ROOT "e:/dev/lib/SFML-2.2")
-#set(SFML_STATIC_LIBRARIES TRUE)
-find_package(SFML 2.2 COMPONENTS audio network graphics window system)
+set(SFML_STATIC_LIBRARIES TRUE)
+find_package(SFML 2.2 COMPONENTS audio graphics window system)
 include_directories(${SFML_INCLUDE_DIR})
 
 include_directories("e:/dev/usr/include")
@@ -20,7 +20,7 @@ include_directories("e:/dev/usr/include")
 #find_package(Box2D)
 #include_directories(${BOX2D_INCLUDE_DIR})
 include_directories("e:/dev/lib/")
-include_directories("e:/dev/lib/Box2D")
+#include_directories("e:/dev/lib/Box2D")
 
 # list of libraries
 
