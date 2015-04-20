@@ -4,7 +4,9 @@
 using namespace std;
 using namespace Json;
 
+#ifdef _WIN64
 #define M_PI 3.1415926535f
+#endif
 
 App::App()
 {
