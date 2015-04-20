@@ -10,9 +10,9 @@ In a Future where trashed robots roam a ruined planet, where nothing grows, A ro
 
 MOVE: WASD
 
-SHOOT: SPACE BAR or LEFT MOUSECLICK
+SHOOT: SPACE BAR or LEFT MOUSE BUTTON
 
-RECHARGE (at a water source): LEFT CONTROL or E
+RECHARGE (at a water source): LEFT CONTROL, or RIGHT MOUSE BUTTON
 
 
 
