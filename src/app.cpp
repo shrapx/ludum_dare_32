@@ -300,6 +300,7 @@ void App::_update()
 			_world._player->tile_normal = _world._player->tile_normal*0.9f + normalize(newdir)*0.1f ;
 
 			_world._player->tile_angle = get_angle(_world._player->tile_normal);
+			//_world._player->tile_angle = get_angle(newdir);
 
 			tile_pos += _world._player->tile_normal*0.1f;
 
@@ -317,7 +318,7 @@ void App::_update()
 			unit_pos.y = floor(tile_pos.y);
 			_world.set_entity_position("tile_target", unit_pos);*/
 
-			_world._player->walk_anim_marker += base_time.get_step()*2.5f;
+			_world._player->walk_anim_marker += base_time.get_step()*4.0f;
 		}
 
 		if (cmd_state["fire"])
